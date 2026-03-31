@@ -49,7 +49,7 @@ export default async function PropertyDetailPage({ params }: PropertyDetailPageP
   const bookedRooms = property.rooms?.filter((room) => room.availability === "booked").length ?? 0;
 
   return (
-    <main className="relative isolate overflow-hidden">
+    <main className="relative isolate overflow-x-hidden">
       <section className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
         <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
           <Link
@@ -79,13 +79,13 @@ export default async function PropertyDetailPage({ params }: PropertyDetailPageP
           </div>
         </div>
 
-        <div className="rounded-3xl border border-black/10 bg-white/90 p-8 shadow-lg">
+        <div className="rounded-3xl border border-black/10 bg-white/90 p-4 shadow-lg sm:p-8">
           <div className="grid gap-8 lg:grid-cols-3">
             <div className="lg:col-span-2 space-y-8">
               <ImageGallery images={property.images} title={property.name} />
 
               <div>
-                <h1 className="text-4xl font-bold tracking-tight text-stone-900">{property.name}</h1>
+                <h1 className="break-words text-3xl font-bold tracking-tight text-stone-900 sm:text-4xl">{property.name}</h1>
                 <p className="mt-2 text-stone-600">
                   {property.location.unit}, {property.location.street}, {property.location.city}
                 </p>
