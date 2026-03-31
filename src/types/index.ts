@@ -32,6 +32,8 @@ export type Property = {
   description: string;
   images: string[];
   rooms?: RoomUnit[];
+  directionsUrl?: string;
+  mapEmbedUrl?: string;
 };
 
 export type InquiryInput = {

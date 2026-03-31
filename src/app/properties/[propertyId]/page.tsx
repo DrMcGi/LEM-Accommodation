@@ -113,6 +113,38 @@ export default async function PropertyDetailPage({ params }: PropertyDetailPageP
                   ))}
                 </ul>
               </div>
+
+              {property.mapEmbedUrl && (
+                <div>
+                  <h2 className="text-2xl font-bold text-stone-900">Location &amp; Directions</h2>
+                  <div className="mt-4 overflow-hidden rounded-2xl border border-stone-200 shadow-sm">
+                    <iframe
+                      src={property.mapEmbedUrl}
+                      width="100%"
+                      height="300"
+                      style={{ border: 0 }}
+                      allowFullScreen
+                      loading="lazy"
+                      referrerPolicy="no-referrer-when-downgrade"
+                      title={`Map showing location of ${property.name}`}
+                    />
+                  </div>
+                  {property.directionsUrl && (
+                    <a
+                      href={property.directionsUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="mt-3 inline-flex items-center gap-2 rounded-xl bg-teal-700 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-teal-800"
+                    >
+                      <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                      </svg>
+                      Get Directions on Google Maps
+                    </a>
+                  )}
+                </div>
+              )}
             </div>
 
             <div className="space-y-4 lg:sticky lg:top-8 h-fit">
