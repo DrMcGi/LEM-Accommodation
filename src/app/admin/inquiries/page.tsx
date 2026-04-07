@@ -3,6 +3,10 @@ import { getInquiries } from "@/lib/inquiry-store";
 
 export const metadata = {
   title: "Inquiries | LEM Accommodation",
+  robots: {
+    index: false,
+    follow: false,
+  },
 };
 
 export default async function AdminInquiriesPage() {

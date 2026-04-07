@@ -1,9 +1,12 @@
+import type { Metadata } from "next";
 import { properties, propertyMap } from "@/data/properties";
 import { ImageGallery } from "@/components/image-gallery";
 import { RoomCard } from "@/components/room-card";
 import { notFound } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
+
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://lem-accommodation.vercel.app";
 
 type PropertyDetailPageProps = {
   params: Promise<{
@@ -17,7 +20,7 @@ const currency = new Intl.NumberFormat("en-ZA", {
   maximumFractionDigits: 0,
 });
 
-export async function generateMetadata({ params }: PropertyDetailPageProps) {
+export async function generateMetadata({ params }: PropertyDetailPageProps): Promise<Metadata> {
   const { propertyId } = await params;
   const property = propertyMap.get(propertyId);
 
@@ -25,9 +28,43 @@ export async function generateMetadata({ params }: PropertyDetailPageProps) {
     return { title: "Property Not Found" };
   }
 
+  const locationLabel = property.location.city;
+  const detailDescription = `${property.summary} Explore pricing, features, photos, and location details for this ${property.type === "rooms" ? "monthly rental property" : "home rental"} in ${locationLabel}.`;
+
   return {
-    title: `${property.name} | LEM Accommodation`,
-    description: property.summary,
+    title: `${property.name} | ${locationLabel} Accommodation`,
+    description: detailDescription,
+    keywords: [
+      property.name,
+      `${locationLabel} accommodation`,
+      `${locationLabel} rentals`,
+      property.type === "rooms" ? `${locationLabel} rooms to rent` : `${locationLabel} house to rent`,
+      locationLabel.includes("Polokwane") ? "apartments in Polokwane" : "apartments in Lebowakgomo",
+      "LEM Accommodation",
+    ],
+    alternates: {
+      canonical: `/properties/${property.id}`,
+    },
+    openGraph: {
+      title: `${property.name} | LEM Accommodation`,
+      description: detailDescription,
+      url: `${siteUrl}/properties/${property.id}`,
+      type: "article",
+      images: property.images.length
+        ? [
+            {
+              url: property.images[0],
+              alt: property.name,
+            },
+          ]
+        : undefined,
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: `${property.name} | LEM Accommodation`,
+      description: detailDescription,
+      images: property.images.length ? [property.images[0]] : undefined,
+    },
   };
 }
 
@@ -47,9 +84,34 @@ export default async function PropertyDetailPage({ params }: PropertyDetailPageP
 
   const availableRooms = property.rooms?.filter((room) => room.availability === "available").length ?? 0;
   const bookedRooms = property.rooms?.filter((room) => room.availability === "booked").length ?? 0;
+  const propertyStructuredData = {
+    "@context": "https://schema.org",
+    "@type": property.type === "rooms" ? "ApartmentComplex" : "House",
+    name: property.name,
+    description: property.description,
+    url: `${siteUrl}/properties/${property.id}`,
+    image: property.images.map((image) => `${siteUrl}${image}`),
+    address: {
+      "@type": "PostalAddress",
+      streetAddress: `${property.location.unit}, ${property.location.street}`,
+      addressLocality: property.location.city,
+      addressCountry: "ZA",
+    },
+    offers: {
+      "@type": "Offer",
+      priceCurrency: "ZAR",
+      price: property.pricePerMonth,
+      availability:
+        property.rooms?.some((room) => room.availability === "available") ?? true
+          ? "https://schema.org/InStock"
+          : "https://schema.org/LimitedAvailability",
+      url: `${siteUrl}/properties/${property.id}`,
+    },
+  };
 
   return (
     <main className="relative isolate overflow-x-hidden">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(propertyStructuredData) }} />
       <section className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
         <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
           <Link
@@ -85,7 +147,7 @@ export default async function PropertyDetailPage({ params }: PropertyDetailPageP
               <ImageGallery images={property.images} title={property.name} />
 
               <div>
-                <h1 className="break-words text-3xl font-bold tracking-tight text-stone-900 sm:text-4xl">{property.name}</h1>
+                <h1 className="wrap-break-word text-3xl font-bold tracking-tight text-stone-900 sm:text-4xl">{property.name}</h1>
                 <p className="mt-2 text-stone-600">
                   {property.location.unit}, {property.location.street}, {property.location.city}
                 </p>
@@ -183,7 +245,7 @@ export default async function PropertyDetailPage({ params }: PropertyDetailPageP
 
               <div className="rounded-2xl border border-stone-200 bg-white p-4 text-sm text-stone-600 space-y-2">
                 <div className="flex items-start gap-2">
-                  <svg className="h-5 w-5 text-stone-400 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <svg className="mt-0.5 h-5 w-5 shrink-0 text-stone-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path
                       strokeLinecap="round"
                       strokeLinejoin="round"
