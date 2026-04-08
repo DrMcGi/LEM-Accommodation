@@ -71,7 +71,7 @@ export function RoomCard({ room, formattedPrice, propertyName }: RoomCardProps) 
 
         {room.availability === "booked" && room.bookingDetails && (
           <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800">
-            <p className="font-semibold">{room.bookingDetails.tenant}</p>
+            <p className="font-semibold">Currently booked</p>
             {room.bookingDetails.bookedUntil && (
               <p className="text-red-700">Booked until {new Date(room.bookingDetails.bookedUntil).toLocaleDateString()}</p>
             )}

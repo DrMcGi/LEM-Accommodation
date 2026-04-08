@@ -21,23 +21,34 @@ export function SiteHeader() {
           </div>
         </Link>
 
-        <nav className="flex shrink-0 items-center gap-1 text-xs font-semibold sm:gap-2 sm:text-sm">
-          <Link href="/" className="rounded-lg px-2 py-2 text-stone-700 transition hover:bg-teal-50 hover:text-teal-800 sm:px-3">
-            Home
-          </Link>
-          <Link
-            href="/#properties"
-            className="rounded-lg px-2 py-2 text-stone-700 transition hover:bg-teal-50 hover:text-teal-800 sm:px-3"
+        <div className="flex shrink-0 items-center gap-2 sm:gap-3">
+          <nav className="flex items-center gap-1 text-xs font-semibold sm:gap-2 sm:text-sm">
+            <Link href="/" className="rounded-lg px-2 py-2 text-stone-700 transition hover:bg-teal-50 hover:text-teal-800 sm:px-3">
+              Home
+            </Link>
+            <Link
+              href="/#properties"
+              className="rounded-lg px-2 py-2 text-stone-700 transition hover:bg-teal-50 hover:text-teal-800 sm:px-3"
+            >
+              Properties
+            </Link>
+            <Link
+              href="/#inquire"
+              className="rounded-lg bg-teal-700 px-2 py-2 text-white transition hover:bg-teal-800 sm:px-3"
+            >
+              Inquire
+            </Link>
+          </nav>
+
+          <a
+            href="https://www.lemholding.co.za"
+            className="inline-flex items-center gap-2 rounded-full border border-teal-200 bg-white/75 px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-teal-800 transition hover:bg-teal-50 sm:px-4 sm:text-xs sm:tracking-[0.22em]"
           >
-            Properties
-          </Link>
-          <Link
-            href="/#inquire"
-            className="rounded-lg bg-teal-700 px-2 py-2 text-white transition hover:bg-teal-800 sm:px-3"
-          >
-            Inquire
-          </Link>
-        </nav>
+            <span className="h-2.5 w-2.5 rounded-full bg-teal-400" />
+            <span className="hidden sm:inline">LEM Holding - Home Page</span>
+            <span className="sm:hidden">LEM Holding</span>
+          </a>
+        </div>
       </div>
     </header>
   );

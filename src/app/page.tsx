@@ -64,7 +64,7 @@ export default function Home() {
                 Find Your Next Home in Lebowakgomo or Polokwane
               </h1>
               <p className="mt-4 max-w-2xl text-teal-50">
-                Explore monthly accommodation in Lebowakgomo and Polokwane, from affordable bachelor-style units and rooms to a premium family home in a secure estate.
+                Two quality rental options, from affordable monthly rooms to a premium family home in a secure estate.
               </p>
               <div className="mt-8 flex flex-wrap gap-3 text-sm font-semibold">
                 <a
@@ -107,47 +107,9 @@ export default function Home() {
           ))}
         </section>
 
-        <section className="mt-10 rounded-3xl border border-black/10 bg-white/80 p-6 shadow-sm sm:p-8">
-          <div className="max-w-4xl">
-            <h2 className="text-3xl font-bold tracking-tight text-stone-900 sm:text-4xl">
-              Accommodation in Polokwane and Lebowakgomo, built around real monthly living.
-            </h2>
-            <p className="mt-4 text-lg leading-relaxed text-stone-700">
-              If you are searching for accommodation in Polokwane, accommodation in Lebowakgomo, apartments in Polokwane, or apartments in Lebowakgomo, LEM Accommodation gives you a direct way to explore current rental options and inquire without delays.
-            </p>
-          </div>
-
-          <div className="mt-6 grid gap-5 md:grid-cols-2">
-            <div className="rounded-2xl border border-teal-100 bg-teal-50/70 p-5">
-              <h3 className="text-xl font-semibold text-stone-900">Lebowakgomo monthly rooms and bachelor-style units</h3>
-              <p className="mt-3 text-stone-700">
-                The Lebowakgomo Unit F property is designed for tenants who want affordable monthly accommodation with practical essentials such as prepaid electricity, Wi-Fi, secure access, and easy day-to-day convenience.
-              </p>
-            </div>
-
-            <div className="rounded-2xl border border-amber-100 bg-amber-50/70 p-5">
-              <h3 className="text-xl font-semibold text-stone-900">Polokwane rental living close to Bendor amenities</h3>
-              <p className="mt-3 text-stone-700">
-                In Polokwane, our Woodlands Estate home offers secure family accommodation near Bendor shopping, schools, healthcare, and fitness facilities for tenants who need space, access, and a stronger residential setting.
-              </p>
-            </div>
-          </div>
-        </section>
-
         <section className="mt-10">
           <InquiryForm properties={properties} />
         </section>
-
-        {process.env.NODE_ENV !== "production" ? (
-          <section className="mt-8 rounded-2xl border border-black/10 bg-white/70 p-5 text-sm text-stone-700 shadow-sm">
-            <p>
-              Internal leads dashboard: <a href="/admin/inquiries" className="font-semibold text-teal-700 hover:underline">/admin/inquiries</a>
-            </p>
-            <p className="mt-1">
-              This starter stores inquiries in a local file at <span className="font-medium">storage/inquiries.json</span>.
-            </p>
-          </section>
-        ) : null}
       </section>
     </main>
   );
