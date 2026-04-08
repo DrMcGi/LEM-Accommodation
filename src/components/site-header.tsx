@@ -41,12 +41,12 @@ export function SiteHeader() {
           </nav>
 
           <a
-            href="https://www.lemholding.co.za"
+            href="https://www.lemprojects.co.za"
             className="inline-flex items-center gap-2 rounded-full border border-teal-200 bg-white/75 px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-teal-800 transition hover:bg-teal-50 sm:px-4 sm:text-xs sm:tracking-[0.22em]"
           >
             <span className="h-2.5 w-2.5 rounded-full bg-teal-400" />
-            <span className="hidden sm:inline">LEM Holding - Home Page</span>
-            <span className="sm:hidden">LEM Holding</span>
+            <span className="hidden sm:inline">LEM Projects - Home Page</span>
+            <span className="sm:hidden">LEM Projects</span>
           </a>
         </div>
       </div>
