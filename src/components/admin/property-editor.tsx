@@ -15,6 +15,7 @@ export function PropertyEditor({ property }: Props) {
   const [status, setStatus] = useState<string>("");
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState<Record<string, boolean>>({});
+  const [deleting, setDeleting] = useState<Record<string, boolean>>({});
 
   const hasRooms = useMemo(() => rooms.length > 0, [rooms.length]);
 
@@ -50,6 +51,49 @@ export function PropertyEditor({ property }: Props) {
 
   function updateRoom(roomId: string, patch: Partial<(typeof rooms)[number]>) {
     setRooms((prev) => prev.map((room) => (room.id === roomId ? { ...room, ...patch } : room)));
+  }
+
+  function isBlobUrl(url: string) {
+    return url.includes(".blob.vercel-storage.com/");
+  }
+
+  async function deleteRoomImage(roomId: string, imageUrl: string) {
+    const nextImages = (rooms.find((r) => r.id === roomId)?.images ?? []).filter((url) => url !== imageUrl);
+
+    const blobDelete = isBlobUrl(imageUrl) || imageUrl.startsWith("/api/blob");
+    const message = blobDelete
+      ? "This will permanently delete the uploaded image from storage and remove it from this room. Continue?"
+      : "This will remove the image URL from this room. Continue?";
+
+    if (!confirm(message)) {
+      return;
+    }
+
+    setDeleting((prev) => ({ ...prev, [imageUrl]: true }));
+    setStatus("");
+
+    try {
+      if (blobDelete) {
+        const response = await fetch("/api/admin/blob", {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ url: imageUrl }),
+        });
+
+        if (!response.ok) {
+          const payload = (await response.json().catch(() => null)) as { error?: string } | null;
+          setStatus(payload?.error ?? "Could not delete image.");
+          return;
+        }
+      }
+
+      updateRoom(roomId, { images: nextImages });
+      setStatus("Image deleted. Remember to Save changes.");
+    } catch {
+      setStatus("Could not delete image.");
+    } finally {
+      setDeleting((prev) => ({ ...prev, [imageUrl]: false }));
+    }
   }
 
   async function uploadRoomImage(roomId: string, file: File) {
@@ -214,6 +258,27 @@ export function PropertyEditor({ property }: Props) {
                         className="min-w-[16rem] rounded-lg border border-stone-300 bg-white px-2 py-1 text-sm font-medium text-stone-800 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/30"
                         placeholder="/images/polokwane/room-1.jpg\nhttps://..."
                       />
+
+                      {(room.images ?? []).length ? (
+                        <div className="mt-2 space-y-2">
+                          {(room.images ?? []).map((url) => (
+                            <div key={url} className="flex items-center justify-between gap-3 rounded-lg border border-stone-200 bg-white px-2 py-1">
+                              <p className="text-xs text-stone-700 truncate" title={url}>
+                                {url}
+                              </p>
+                              <button
+                                type="button"
+                                disabled={Boolean(deleting[url])}
+                                onClick={() => deleteRoomImage(room.id, url)}
+                                className="shrink-0 rounded-lg border border-stone-300 bg-white px-2 py-1 text-xs font-semibold text-stone-800 transition hover:bg-stone-50 disabled:cursor-not-allowed disabled:opacity-60"
+                              >
+                                {deleting[url] ? "Deleting..." : "Delete"}
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      ) : null}
+
                       <div className="mt-2 flex flex-wrap items-center gap-2">
                         <label className="inline-flex items-center gap-2 rounded-xl border border-stone-300 bg-white px-3 py-1.5 text-sm font-semibold text-stone-800 transition hover:bg-stone-50">
                           <input

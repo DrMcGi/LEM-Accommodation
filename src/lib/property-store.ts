@@ -39,24 +39,28 @@ async function writePropertiesFile(properties: Property[]) {
 
 async function ensureSeeded() {
   if (isPostgresConfigured()) {
-    await ensureSchema();
+    try {
+      await ensureSchema();
 
-    const countResult = await sql<{ count: string }>`SELECT COUNT(*)::text as count FROM properties`;
-    const count = Number(countResult.rows[0]?.count ?? "0");
-    if (count > 0) {
+      const countResult = await sql<{ count: string }>`SELECT COUNT(*)::text as count FROM properties`;
+      const count = Number(countResult.rows[0]?.count ?? "0");
+      if (count > 0) {
+        return;
+      }
+
+      for (const property of seedProperties) {
+        const json = JSON.stringify(property);
+        await sql`
+          INSERT INTO properties (id, data, updated_at)
+          VALUES (${property.id}, ${json}::jsonb, NOW())
+          ON CONFLICT (id) DO UPDATE SET data = EXCLUDED.data, updated_at = EXCLUDED.updated_at
+        `;
+      }
+
       return;
+    } catch {
+      // If Postgres is configured but temporarily unreachable (e.g. during build), fall back.
     }
-
-    for (const property of seedProperties) {
-      const json = JSON.stringify(property);
-      await sql`
-        INSERT INTO properties (id, data, updated_at)
-        VALUES (${property.id}, ${json}::jsonb, NOW())
-        ON CONFLICT (id) DO UPDATE SET data = EXCLUDED.data, updated_at = EXCLUDED.updated_at
-      `;
-    }
-
-    return;
   }
 
   const existing = await readPropertiesFile();
@@ -76,21 +80,25 @@ export async function getProperties(): Promise<Property[]> {
   await ensureSeeded();
 
   if (isPostgresConfigured()) {
-    await ensureSchema();
-    const result = await sql<{ id: string; data: unknown }>`SELECT id, data FROM properties`;
+    try {
+      await ensureSchema();
+      const result = await sql<{ id: string; data: unknown }>`SELECT id, data FROM properties`;
 
-    const list = result.rows
-      .map((row) => {
-        const data = row.data;
-        if (typeof data === "string") {
-          return JSON.parse(data) as Property;
-        }
-        return data as Property;
-      })
-      .filter(Boolean);
+      const list = result.rows
+        .map((row) => {
+          const data = row.data;
+          if (typeof data === "string") {
+            return JSON.parse(data) as Property;
+          }
+          return data as Property;
+        })
+        .filter(Boolean);
 
-    if (list.length > 0) {
-      return list;
+      if (list.length > 0) {
+        return list;
+      }
+    } catch {
+      // If Postgres is configured but unreachable, fall back to local seed/file.
     }
   }
 

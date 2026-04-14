@@ -96,28 +96,32 @@ export async function getAdminUsers(): Promise<AdminUser[]> {
   await ensureInitialAdminIfConfigured();
 
   if (isPostgresConfigured()) {
-    await ensureSchema();
-    const result = await sql<{
-      id: string;
-      email: string;
-      name: string;
-      created_at: Date | string;
-      password_hash: string;
-      disabled: boolean;
-    }>`
-      SELECT id, email, name, password_hash, created_at, disabled
-      FROM admin_users
-      ORDER BY created_at ASC
-    `;
+    try {
+      await ensureSchema();
+      const result = await sql<{
+        id: string;
+        email: string;
+        name: string;
+        created_at: Date | string;
+        password_hash: string;
+        disabled: boolean;
+      }>`
+        SELECT id, email, name, password_hash, created_at, disabled
+        FROM admin_users
+        ORDER BY created_at ASC
+      `;
 
-    return result.rows.map((row) => ({
-      id: row.id,
-      email: row.email,
-      name: row.name,
-      passwordHash: row.password_hash,
-      createdAt: (row.created_at instanceof Date ? row.created_at.toISOString() : String(row.created_at)),
-      disabled: row.disabled,
-    }));
+      return result.rows.map((row) => ({
+        id: row.id,
+        email: row.email,
+        name: row.name,
+        passwordHash: row.password_hash,
+        createdAt: (row.created_at instanceof Date ? row.created_at.toISOString() : String(row.created_at)),
+        disabled: row.disabled,
+      }));
+    } catch {
+      // If Postgres is configured but unreachable (e.g. during build), fall back.
+    }
   }
 
   const users = await readUsersFile();
@@ -130,34 +134,38 @@ export async function findAdminUserByEmail(email: string): Promise<AdminUser | n
   const normalized = email.trim().toLowerCase();
 
   if (isPostgresConfigured()) {
-    await ensureSchema();
-    const result = await sql<{
-      id: string;
-      email: string;
-      name: string;
-      password_hash: string;
-      created_at: Date | string;
-      disabled: boolean;
-    }>`
-      SELECT id, email, name, password_hash, created_at, disabled
-      FROM admin_users
-      WHERE email = ${normalized}
-      LIMIT 1
-    `;
+    try {
+      await ensureSchema();
+      const result = await sql<{
+        id: string;
+        email: string;
+        name: string;
+        password_hash: string;
+        created_at: Date | string;
+        disabled: boolean;
+      }>`
+        SELECT id, email, name, password_hash, created_at, disabled
+        FROM admin_users
+        WHERE email = ${normalized}
+        LIMIT 1
+      `;
 
-    const row = result.rows[0];
-    if (!row) {
-      return null;
+      const row = result.rows[0];
+      if (!row) {
+        return null;
+      }
+
+      return {
+        id: row.id,
+        email: row.email,
+        name: row.name,
+        passwordHash: row.password_hash,
+        createdAt: (row.created_at instanceof Date ? row.created_at.toISOString() : String(row.created_at)),
+        disabled: row.disabled,
+      };
+    } catch {
+      // If Postgres is configured but unreachable, fall back to JSON file.
     }
-
-    return {
-      id: row.id,
-      email: row.email,
-      name: row.name,
-      passwordHash: row.password_hash,
-      createdAt: (row.created_at instanceof Date ? row.created_at.toISOString() : String(row.created_at)),
-      disabled: row.disabled,
-    };
   }
 
   const users = await readUsersFile();

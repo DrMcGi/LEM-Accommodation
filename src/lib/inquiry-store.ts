@@ -17,44 +17,48 @@ async function ensureStorage() {
 
 export async function getInquiries(): Promise<InquiryRecord[]> {
   if (isPostgresConfigured()) {
-    await ensureSchema();
+    try {
+      await ensureSchema();
 
-    const result = await sql<{
-      id: string;
-      fullName: string;
-      phoneNumber: string;
-      email: string;
-      propertyId: string;
-      message: string;
-      createdAt: Date | string;
-      status: "new" | "contacted" | "archived" | string;
-      updatedAt: Date | string | null;
-    }>`
-      SELECT
-        id,
-        full_name as "fullName",
-        phone_number as "phoneNumber",
-        email,
-        property_id as "propertyId",
-        message,
-        created_at as "createdAt",
-        status,
-        updated_at as "updatedAt"
-      FROM enquiries
-      ORDER BY created_at DESC
-    `;
+      const result = await sql<{
+        id: string;
+        fullName: string;
+        phoneNumber: string;
+        email: string;
+        propertyId: string;
+        message: string;
+        createdAt: Date | string;
+        status: "new" | "contacted" | "archived" | string;
+        updatedAt: Date | string | null;
+      }>`
+        SELECT
+          id,
+          full_name as "fullName",
+          phone_number as "phoneNumber",
+          email,
+          property_id as "propertyId",
+          message,
+          created_at as "createdAt",
+          status,
+          updated_at as "updatedAt"
+        FROM enquiries
+        ORDER BY created_at DESC
+      `;
 
-    return result.rows.map((row) => ({
-      id: row.id,
-      fullName: row.fullName,
-      phoneNumber: row.phoneNumber,
-      email: row.email,
-      propertyId: row.propertyId,
-      message: row.message,
-      createdAt: row.createdAt instanceof Date ? row.createdAt.toISOString() : String(row.createdAt),
-      status: (row.status as InquiryRecord["status"]) ?? "new",
-      updatedAt: row.updatedAt ? (row.updatedAt instanceof Date ? row.updatedAt.toISOString() : String(row.updatedAt)) : undefined,
-    }));
+      return result.rows.map((row) => ({
+        id: row.id,
+        fullName: row.fullName,
+        phoneNumber: row.phoneNumber,
+        email: row.email,
+        propertyId: row.propertyId,
+        message: row.message,
+        createdAt: row.createdAt instanceof Date ? row.createdAt.toISOString() : String(row.createdAt),
+        status: (row.status as InquiryRecord["status"]) ?? "new",
+        updatedAt: row.updatedAt ? (row.updatedAt instanceof Date ? row.updatedAt.toISOString() : String(row.updatedAt)) : undefined,
+      }));
+    } catch {
+      // If Postgres is configured but unreachable, fall back to JSON file.
+    }
   }
 
   await ensureStorage();
@@ -81,21 +85,27 @@ export async function saveInquiry(input: InquiryInput): Promise<InquiryRecord> {
   };
 
   if (isPostgresConfigured()) {
-    await ensureSchema();
-    await sql`
-      INSERT INTO enquiries (id, full_name, phone_number, email, property_id, message, created_at, status)
-      VALUES (
-        ${record.id},
-        ${record.fullName},
-        ${record.phoneNumber},
-        ${record.email},
-        ${record.propertyId},
-        ${record.message},
-        ${record.createdAt},
-        ${record.status}
-      )
-    `;
-    return record;
+    try {
+      await ensureSchema();
+      await sql`
+        INSERT INTO enquiries (id, full_name, phone_number, email, property_id, message, created_at, status)
+        VALUES (
+          ${record.id},
+          ${record.fullName},
+          ${record.phoneNumber},
+          ${record.email},
+          ${record.propertyId},
+          ${record.message},
+          ${record.createdAt},
+          ${record.status}
+        )
+      `;
+      return record;
+    } catch {
+      if (isVercelRuntime()) {
+        throw new Error("Database connection failed. Please verify POSTGRES_URL is set and reachable.");
+      }
+    }
   }
 
   if (isVercelRuntime()) {
@@ -113,51 +123,57 @@ export async function updateInquiry(
   patch: Partial<Pick<InquiryRecord, "status" | "updatedAt">>,
 ): Promise<InquiryRecord> {
   if (isPostgresConfigured()) {
-    await ensureSchema();
+    try {
+      await ensureSchema();
 
-    const status = patch.status ?? "new";
-    const result = await sql<{
-      id: string;
-      fullName: string;
-      phoneNumber: string;
-      email: string;
-      propertyId: string;
-      message: string;
-      createdAt: Date | string;
-      status: "new" | "contacted" | "archived" | string;
-      updatedAt: Date | string | null;
-    }>`
-      UPDATE enquiries
-      SET status = ${status}, updated_at = NOW()
-      WHERE id = ${inquiryId}
-      RETURNING
-        id,
-        full_name as "fullName",
-        phone_number as "phoneNumber",
-        email,
-        property_id as "propertyId",
-        message,
-        created_at as "createdAt",
-        status,
-        updated_at as "updatedAt"
-    `;
+      const status = patch.status ?? "new";
+      const result = await sql<{
+        id: string;
+        fullName: string;
+        phoneNumber: string;
+        email: string;
+        propertyId: string;
+        message: string;
+        createdAt: Date | string;
+        status: "new" | "contacted" | "archived" | string;
+        updatedAt: Date | string | null;
+      }>`
+        UPDATE enquiries
+        SET status = ${status}, updated_at = NOW()
+        WHERE id = ${inquiryId}
+        RETURNING
+          id,
+          full_name as "fullName",
+          phone_number as "phoneNumber",
+          email,
+          property_id as "propertyId",
+          message,
+          created_at as "createdAt",
+          status,
+          updated_at as "updatedAt"
+      `;
 
-    const row = result.rows[0];
-    if (!row) {
-      throw new Error("Inquiry not found");
+      const row = result.rows[0];
+      if (!row) {
+        throw new Error("Inquiry not found");
+      }
+
+      return {
+        id: row.id,
+        fullName: row.fullName,
+        phoneNumber: row.phoneNumber,
+        email: row.email,
+        propertyId: row.propertyId,
+        message: row.message,
+        createdAt: row.createdAt instanceof Date ? row.createdAt.toISOString() : String(row.createdAt),
+        status: (row.status as InquiryRecord["status"]) ?? "new",
+        updatedAt: row.updatedAt ? (row.updatedAt instanceof Date ? row.updatedAt.toISOString() : String(row.updatedAt)) : undefined,
+      };
+    } catch {
+      if (isVercelRuntime()) {
+        throw new Error("Database connection failed. Please verify POSTGRES_URL is set and reachable.");
+      }
     }
-
-    return {
-      id: row.id,
-      fullName: row.fullName,
-      phoneNumber: row.phoneNumber,
-      email: row.email,
-      propertyId: row.propertyId,
-      message: row.message,
-      createdAt: row.createdAt instanceof Date ? row.createdAt.toISOString() : String(row.createdAt),
-      status: (row.status as InquiryRecord["status"]) ?? "new",
-      updatedAt: row.updatedAt ? (row.updatedAt instanceof Date ? row.updatedAt.toISOString() : String(row.updatedAt)) : undefined,
-    };
   }
 
   if (isVercelRuntime()) {
