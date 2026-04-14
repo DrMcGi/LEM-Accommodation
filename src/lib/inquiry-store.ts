@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { InquiryInput, InquiryRecord } from "@/types";
+import { ensureSchema, isPostgresConfigured, sql } from "@/lib/db";
 
 const storageDirectory = path.join(process.cwd(), "storage");
 const inquiriesFile = path.join(storageDirectory, "inquiries.json");
@@ -11,6 +12,47 @@ async function ensureStorage() {
 }
 
 export async function getInquiries(): Promise<InquiryRecord[]> {
+  if (isPostgresConfigured()) {
+    await ensureSchema();
+
+    const result = await sql<{
+      id: string;
+      fullName: string;
+      phoneNumber: string;
+      email: string;
+      propertyId: string;
+      message: string;
+      createdAt: Date | string;
+      status: "new" | "contacted" | "archived" | string;
+      updatedAt: Date | string | null;
+    }>`
+      SELECT
+        id,
+        full_name as "fullName",
+        phone_number as "phoneNumber",
+        email,
+        property_id as "propertyId",
+        message,
+        created_at as "createdAt",
+        status,
+        updated_at as "updatedAt"
+      FROM enquiries
+      ORDER BY created_at DESC
+    `;
+
+    return result.rows.map((row) => ({
+      id: row.id,
+      fullName: row.fullName,
+      phoneNumber: row.phoneNumber,
+      email: row.email,
+      propertyId: row.propertyId,
+      message: row.message,
+      createdAt: row.createdAt instanceof Date ? row.createdAt.toISOString() : String(row.createdAt),
+      status: (row.status as InquiryRecord["status"]) ?? "new",
+      updatedAt: row.updatedAt ? (row.updatedAt instanceof Date ? row.updatedAt.toISOString() : String(row.updatedAt)) : undefined,
+    }));
+  }
+
   await ensureStorage();
 
   try {
@@ -27,8 +69,6 @@ export async function getInquiries(): Promise<InquiryRecord[]> {
 }
 
 export async function saveInquiry(input: InquiryInput): Promise<InquiryRecord> {
-  const existing = await getInquiries();
-
   const record: InquiryRecord = {
     ...input,
     id: randomUUID(),
@@ -36,9 +76,27 @@ export async function saveInquiry(input: InquiryInput): Promise<InquiryRecord> {
     status: "new",
   };
 
+  if (isPostgresConfigured()) {
+    await ensureSchema();
+    await sql`
+      INSERT INTO enquiries (id, full_name, phone_number, email, property_id, message, created_at, status)
+      VALUES (
+        ${record.id},
+        ${record.fullName},
+        ${record.phoneNumber},
+        ${record.email},
+        ${record.propertyId},
+        ${record.message},
+        ${record.createdAt},
+        ${record.status}
+      )
+    `;
+    return record;
+  }
+
+  const existing = await getInquiries();
   const next = [record, ...existing];
   await writeFile(inquiriesFile, JSON.stringify(next, null, 2), "utf8");
-
   return record;
 }
 
@@ -46,6 +104,54 @@ export async function updateInquiry(
   inquiryId: string,
   patch: Partial<Pick<InquiryRecord, "status" | "updatedAt">>,
 ): Promise<InquiryRecord> {
+  if (isPostgresConfigured()) {
+    await ensureSchema();
+
+    const status = patch.status ?? "new";
+    const result = await sql<{
+      id: string;
+      fullName: string;
+      phoneNumber: string;
+      email: string;
+      propertyId: string;
+      message: string;
+      createdAt: Date | string;
+      status: "new" | "contacted" | "archived" | string;
+      updatedAt: Date | string | null;
+    }>`
+      UPDATE enquiries
+      SET status = ${status}, updated_at = NOW()
+      WHERE id = ${inquiryId}
+      RETURNING
+        id,
+        full_name as "fullName",
+        phone_number as "phoneNumber",
+        email,
+        property_id as "propertyId",
+        message,
+        created_at as "createdAt",
+        status,
+        updated_at as "updatedAt"
+    `;
+
+    const row = result.rows[0];
+    if (!row) {
+      throw new Error("Inquiry not found");
+    }
+
+    return {
+      id: row.id,
+      fullName: row.fullName,
+      phoneNumber: row.phoneNumber,
+      email: row.email,
+      propertyId: row.propertyId,
+      message: row.message,
+      createdAt: row.createdAt instanceof Date ? row.createdAt.toISOString() : String(row.createdAt),
+      status: (row.status as InquiryRecord["status"]) ?? "new",
+      updatedAt: row.updatedAt ? (row.updatedAt instanceof Date ? row.updatedAt.toISOString() : String(row.updatedAt)) : undefined,
+    };
+  }
+
   const existing = await getInquiries();
   const index = existing.findIndex((inquiry) => inquiry.id === inquiryId);
 

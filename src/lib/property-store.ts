@@ -2,6 +2,7 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import type { Property, RoomAvailability } from "@/types";
 import { properties as seedProperties } from "@/data/properties";
+import { ensureSchema, isPostgresConfigured, sql } from "@/lib/db";
 
 const storageDirectory = path.join(process.cwd(), "storage");
 const propertiesFile = path.join(storageDirectory, "properties.json");
@@ -28,6 +29,27 @@ async function writePropertiesFile(properties: Property[]) {
 }
 
 async function ensureSeeded() {
+  if (isPostgresConfigured()) {
+    await ensureSchema();
+
+    const countResult = await sql<{ count: string }>`SELECT COUNT(*)::text as count FROM properties`;
+    const count = Number(countResult.rows[0]?.count ?? "0");
+    if (count > 0) {
+      return;
+    }
+
+    for (const property of seedProperties) {
+      const json = JSON.stringify(property);
+      await sql`
+        INSERT INTO properties (id, data, updated_at)
+        VALUES (${property.id}, ${json}::jsonb, NOW())
+        ON CONFLICT (id) DO UPDATE SET data = EXCLUDED.data, updated_at = EXCLUDED.updated_at
+      `;
+    }
+
+    return;
+  }
+
   const existing = await readPropertiesFile();
   if (existing && existing.length) {
     return;
@@ -38,6 +60,26 @@ async function ensureSeeded() {
 
 export async function getProperties(): Promise<Property[]> {
   await ensureSeeded();
+
+  if (isPostgresConfigured()) {
+    await ensureSchema();
+    const result = await sql<{ id: string; data: unknown }>`SELECT id, data FROM properties`;
+
+    const list = result.rows
+      .map((row) => {
+        const data = row.data;
+        if (typeof data === "string") {
+          return JSON.parse(data) as Property;
+        }
+        return data as Property;
+      })
+      .filter(Boolean);
+
+    if (list.length > 0) {
+      return list;
+    }
+  }
+
   const stored = await readPropertiesFile();
   return stored ?? seedProperties;
 }
@@ -67,7 +109,17 @@ export async function updateProperty(propertyId: string, patch: Partial<Property
   };
 
   list[index] = next;
-  await writePropertiesFile(list);
+  if (isPostgresConfigured()) {
+    await ensureSchema();
+    const json = JSON.stringify(next);
+    await sql`
+      INSERT INTO properties (id, data, updated_at)
+      VALUES (${propertyId}, ${json}::jsonb, NOW())
+      ON CONFLICT (id) DO UPDATE SET data = EXCLUDED.data, updated_at = EXCLUDED.updated_at
+    `;
+  } else {
+    await writePropertiesFile(list);
+  }
 
   return next;
 }
