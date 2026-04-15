@@ -166,6 +166,10 @@ export const properties: Property[] = [
       unit: "Woodlands Estate",
       city: "Bendor, Polokwane",
     },
+    directionsUrl:
+      "https://www.google.com/maps/search/?api=1&query=Woodlands%20Estate%2C%20The%20Glen%20unit%20no%2004%2C%20Bendor%2C%20Polokwane",
+    mapEmbedUrl:
+      "https://maps.google.com/maps?q=Woodlands%20Estate%2C%20The%20Glen%20unit%20no%2004%2C%20Bendor%2C%20Polokwane&z=16&output=embed",
     description:
       "A luxurious family home in the secure Woodlands Estate, Bendor — one of Polokwane's most sought-after residential addresses. The property offers 3 spacious bedrooms, 3 full bathrooms, and a single garage.\n\nResidents enjoy unmatched convenience: Mall of the North (≈2 km) and Thornhill Shopping Centre (≈3 km) are within easy reach for retail and dining, while Mediclinic Limpopo (≈6 km) provides private healthcare nearby.\n\nFamilies benefit from proximity to top schools: Curro Northern Academy (≈2.5 km), Northern Academy Primary (≈2.5 km), PEPPS Preparatory & College (≈5 km), Flora Park Primary (≈4 km), Capricorn High School (≈6 km), and Hoërskool Pietersburg (≈6 km). Note that Curro and PEPPS often have waiting lists — early application is advised.\n\nFitness options are plentiful: Virgin Active Thornhill (≈3 km) is the closest full-service gym, with Body Life Flora Park (≈4 km), Firebox Fitness (≈5 km), and Virgin Active Polokwane (≈6 km) also nearby.\n\nNote: Munnik Avenue can be congested during school runs and peak hours. Premium estate living comes with higher levies compared to other Polokwane suburbs.",
     details: [
